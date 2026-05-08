@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="1 Lakh">
+<meta name="theme-color" content="#0c0c14">
+<title>1 Lakh Counter</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:       #0c0c14;
+  --surface:  #13131f;
+  --card:     #1a1a2e;
+  --gold:     #f5c518;
+  --gold2:    #e8a800;
+  --glow:     rgba(245,197,24,0.35);
+  --white:    #f2f0ea;
+  --muted:    #5a5a7a;
+  --green:    #3ddc84;
+  --red:      #ff5a5a;
+  --radius:   20px;
+}
+
+html, body {
+  height: 100%; width: 100%;
+  background: var(--bg);
+  color: var(--white);
+  font-family: 'DM Mono', monospace;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100dvh;
+  padding: 0;
+  position: relative;
+}
+
+/* ── Animated background ── */
+.bg-grid {
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(245,197,24,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,197,24,0.03) 1px, transparent 1px);
+  background-size: 36px 36px;
+  animation: gridDrift 20s linear infinite;
+}
+@keyframes gridDrift {
+  0%   { background-position: 0 0; }
+  100% { background-position: 36px 36px; }
+}
+
+.bg-orb {
+  position: fixed; border-radius: 50%; filter: blur(80px);
+  animation: orbFloat 8s ease-in-out infinite alternate;
+  z-index: 0;
+}
+.bg-orb.a {
+  width: 300px; height: 300px;
+  background: rgba(245,197,24,0.07);
+  top: -80px; right: -60px;
+}
+.bg-orb.b {
+  width: 200px; height: 200px;
+  background: rgba(61,220,132,0.05);
+  bottom: 100px; left: -60px;
+  animation-delay: -4s;
+}
+@keyframes orbFloat {
+  from { transform: translate(0,0) scale(1); }
+  to   { transform: translate(20px,30px) scale(1.1); }
+}
+
+/* ── Layout zones ── */
+.zone { position: relative; z-index: 1; width: 100%; }
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 52px 28px 16px;
+}
+.header-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: var(--gold);
+}
+.header-offline {
+  font-size: 10px;
+  color: var(--green);
+  letter-spacing: 1px;
+  display: flex; align-items: center; gap: 5px;
+}
+.dot-online  { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+.dot-offline { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+
+/* ── Count display ── */
+.count-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 28px 0;
+}
+.count-label {
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.count-display {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(72px, 22vw, 110px);
+  line-height: 1;
+  color: var(--gold);
+  text-shadow: 0 0 40px var(--glow), 0 0 80px rgba(245,197,24,0.15);
+  transition: transform 0.08s cubic-bezier(0.34,1.56,0.64,1),
+              text-shadow 0.3s ease;
+  letter-spacing: 2px;
+}
+.count-display.bump {
+  transform: scale(1.06);
+  text-shadow: 0 0 60px var(--glow), 0 0 120px rgba(245,197,24,0.3);
+}
+.count-display.done {
+  color: var(--green);
+  text-shadow: 0 0 40px rgba(61,220,132,0.4);
+}
+
+/* ── Progress bar ── */
+.progress-zone { padding: 12px 28px 0; }
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+.progress-meta span:last-child { color: var(--gold); }
+.bar-track {
+  height: 8px;
+  background: var(--card);
+  border-radius: 100px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 100px;
+  background: linear-gradient(90deg, var(--gold2), var(--gold), #ffe066);
+  box-shadow: 0 0 12px var(--glow);
+  transition: width 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  min-width: 0;
+}
+.bar-fill.done-bar {
+  background: linear-gradient(90deg, #1a9e55, var(--green));
+  box-shadow: 0 0 12px rgba(61,220,132,0.4);
+}
+
+/* ── Milestones ── */
+.milestones {
+  display: flex; gap: 6px;
+  padding: 10px 28px 0;
+  justify-content: space-between;
+}
+.milestone {
+  flex: 1;
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  padding: 5px 2px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: var(--surface);
+  transition: all 0.3s ease;
+}
+.milestone.reached {
+  color: var(--gold);
+  border-color: rgba(245,197,24,0.3);
+  background: rgba(245,197,24,0.06);
+}
+.milestone .m-icon { font-size: 14px; display: block; margin-bottom: 2px; }
+
+/* ── Stats row ── */
+.stats-row {
+  display: flex; gap: 10px;
+  padding: 12px 28px 0;
+}
+.stat-card {
+  flex: 1;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 12px 8px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.stat-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  color: var(--white);
+  line-height: 1;
+}
+.stat-lbl {
+  font-size: 8px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  margin-top: 3px;
+}
+
+/* ── Button zone ── */
+.btn-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 28px 0;
+  gap: 14px;
+}
+
+.main-btn {
+  width: min(280px, 75vw);
+  height: min(280px, 75vw);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffe566, var(--gold), var(--gold2));
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(80px, 22vw, 120px);
+  color: #0c0c14;
+  box-shadow:
+    0 0 0 8px rgba(245,197,24,0.08),
+    0 0 0 16px rgba(245,197,24,0.04),
+    0 20px 60px rgba(245,197,24,0.25),
+    0 4px 20px rgba(0,0,0,0.5);
+  transition: transform 0.1s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+}
+.main-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.25), transparent 60%);
+}
+.main-btn:active {
+  transform: scale(0.93);
+  box-shadow:
+    0 0 0 4px rgba(245,197,24,0.1),
+    0 8px 30px rgba(245,197,24,0.2),
+    0 2px 10px rgba(0,0,0,0.5);
+}
+.main-btn.done-btn {
+  background: radial-gradient(circle at 35% 35%, #5fff9f, var(--green), #1a9e55);
+  box-shadow:
+    0 0 0 8px rgba(61,220,132,0.08),
+    0 0 0 16px rgba(61,220,132,0.04),
+    0 20px 60px rgba(61,220,132,0.25),
+    0 4px 20px rgba(0,0,0,0.5);
+}
+
+/* Ripple */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transform: scale(0);
+  animation: rippleAnim 0.5s linear;
+  pointer-events: none;
+}
+@keyframes rippleAnim {
+  to { transform: scale(4); opacity: 0; }
+}
+
+/* ── Secondary buttons ── */
+.sec-btns {
+  display: flex; gap: 12px;
+  width: min(280px, 75vw);
+}
+.sec-btn {
+  flex: 1; height: 48px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--card);
+  color: var(--white);
+  font-family: 'DM Mono', monospace;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex; align-items: center; justify-content: center;
+}
+.sec-btn:active { transform: scale(0.94); background: var(--surface); }
+.sec-btn.minus { color: var(--red); border-color: rgba(255,90,90,0.15); }
+.sec-btn.reset { color: var(--muted); font-size: 11px; letter-spacing: 1px; }
+
+/* ── Bottom padding ── */
+.bottom-pad { height: 28px; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--card);
+  border: 1px solid rgba(245,197,24,0.3);
+  color: var(--gold);
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 10px 24px;
+  border-radius: 100px;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 100;
+}
+.toast.show {
+  opacity: 1; transform: translateX(-50%) translateY(0);
+}
+
+/* ── Confetti canvas ── */
+#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+
+/* ── Install banner ── */
+.install-banner {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--card);
+  border-top: 1px solid rgba(245,197,24,0.2);
+  padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 200;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+.install-banner.visible { transform: translateY(0); }
+.install-banner p { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.install-banner p strong { color: var(--white); display: block; font-size: 13px; }
+.install-btn {
+  background: var(--gold); color: #0c0c14;
+  border: none; border-radius: 10px;
+  padding: 10px 18px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; font-weight: 500;
+  cursor: pointer; white-space: nowrap; margin-left: 16px;
+}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-orb a"></div>
+<div class="bg-orb b"></div>
+<canvas id="confetti"></canvas>
+
+<!-- Header -->
+<div class="zone header">
+  <div class="header-title">🎯 1 LAKH</div>
+  <div class="header-offline">
+    <div class="dot-online" id="netDot"></div>
+    <span id="netLabel">ONLINE</span>
+  </div>
+</div>
+
+<!-- Count -->
+<div class="zone count-zone">
+  <div class="count-label">CURRENT COUNT</div>
+  <div class="count-display" id="countDisplay">0</div>
+</div>
+
+<!-- Progress -->
+<div class="zone progress-zone">
+  <div class="progress-meta">
+    <span id="pctLabel">0.00%</span>
+    <span id="remLabel">1,00,000 remaining</span>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" id="barFill" style="width:0%"></div>
+  </div>
+</div>
+
+<!-- Milestones -->
+<div class="zone milestones">
+  <div class="milestone" id="m25">
+    <span class="m-icon">⚡</span>25k
+  </div>
+  <div class="milestone" id="m50">
+    <span class="m-icon">🔥</span>50k
+  </div>
+  <div class="milestone" id="m75">
+    <span class="m-icon">🚀</span>75k
+  </div>
+  <div class="milestone" id="m100">
+    <span class="m-icon">🎉</span>1L
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="zone stats-row">
+  <div class="stat-card">
+    <div class="stat-val" id="statToday">0</div>
+    <div class="stat-lbl">TODAY</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" id="statSession">0</div>
+    <div class="stat-lbl">SESSION</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" id="statRemain">1,00,000</div>
+    <div class="stat-lbl">REMAINING</div>
+  </div>
+</div>
+
+<!-- Buttons -->
+<div class="zone btn-zone">
+  <button class="main-btn" id="mainBtn" onclick="increment(event)">+</button>
+  <div class="sec-btns">
+    <button class="sec-btn minus" onclick="decrement()">−</button>
+    <button class="sec-btn reset" onclick="resetConfirm()">RESET</button>
+  </div>
+</div>
+
+<div class="bottom-pad"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Install banner -->
+<div class="install-banner" id="installBanner">
+  <p><strong>📱 Add to Home Screen</strong>Works offline, always available</p>
+  <button class="install-btn" id="installBtn">INSTALL</button>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const TARGET = 100000;
+const TODAY_KEY = new Date().toDateString();
+
+let count       = parseInt(localStorage.getItem('lakh_count') || '0');
+let todayStart  = parseInt(localStorage.getItem('lakh_today_start_' + TODAY_KEY) || count);
+let sessionStart = count;
+
+// Save today's baseline if new day
+if (!localStorage.getItem('lakh_today_start_' + TODAY_KEY)) {
+  localStorage.setItem('lakh_today_start_' + TODAY_KEY, count);
+  todayStart = count;
+}
+
+// ── UI refs ────────────────────────────────────────────────────────────────
+const countDisplay = document.getElementById('countDisplay');
+const barFill      = document.getElementById('barFill');
+const pctLabel     = document.getElementById('pctLabel');
+const remLabel     = document.getElementById('remLabel');
+const statToday    = document.getElementById('statToday');
+const statSession  = document.getElementById('statSession');
+const statRemain   = document.getElementById('statRemain');
+const mainBtn      = document.getElementById('mainBtn');
+
+// ── Format numbers Indian style ────────────────────────────────────────────
+function fmtIN(n) {
+  if (n >= 100000) return (n/100000).toFixed(2) + 'L';
+  if (n >= 1000)   return n.toLocaleString('en-IN');
+  return n.toString();
+}
+function fmtFull(n) { return n.toLocaleString('en-IN'); }
+
+// ── Render ────────────────────────────────────────────────────────────────
+function render() {
+  const pct     = Math.min(count / TARGET * 100, 100);
+  const remain  = Math.max(TARGET - count, 0);
+  const today   = count - todayStart;
+  const session = count - sessionStart;
+  const done    = count >= TARGET;
+
+  // Count
+  countDisplay.textContent = fmtFull(count);
+  countDisplay.className = 'count-display' + (done ? ' done' : '');
+
+  // Bar
+  barFill.style.width = pct.toFixed(2) + '%';
+  barFill.className = 'bar-fill' + (done ? ' done-bar' : '');
+
+  // Labels
+  pctLabel.textContent  = pct.toFixed(2) + '%';
+  remLabel.textContent  = remain === 0 ? '🎉 TARGET REACHED!' : fmtFull(remain) + ' remaining';
+
+  // Stats
+  statToday.textContent   = fmtIN(Math.max(today, 0));
+  statSession.textContent = fmtIN(Math.max(session, 0));
+  statRemain.textContent  = fmtIN(remain);
+
+  // Milestones
+  document.getElementById('m25').className  = 'milestone' + (count >= 25000  ? ' reached' : '');
+  document.getElementById('m50').className  = 'milestone' + (count >= 50000  ? ' reached' : '');
+  document.getElementById('m75').className  = 'milestone' + (count >= 75000  ? ' reached' : '');
+  document.getElementById('m100').className = 'milestone' + (count >= 100000 ? ' reached' : '');
+
+  // Button
+  mainBtn.className = 'main-btn' + (done ? ' done-btn' : '');
+  mainBtn.textContent = done ? '✓' : '+';
+
+  localStorage.setItem('lakh_count', count);
+}
+
+// ── Increment ─────────────────────────────────────────────────────────────
+function increment(e) {
+  if (count >= TARGET) { showToast('🎉 Already at 1 Lakh!'); return; }
+
+  count++;
+  render();
+
+  // Bump animation
+  countDisplay.classList.add('bump');
+  setTimeout(() => countDisplay.classList.remove('bump'), 150);
+
+  // Ripple
+  if (e) {
+    const btn = mainBtn;
+    const circle = document.createElement('span');
+    const diameter = Math.max(btn.clientWidth, btn.clientHeight);
+    circle.style.cssText = `width:${diameter}px;height:${diameter}px;left:${diameter/2}px;top:${diameter/2}px;margin-left:-${diameter/2}px;margin-top:-${diameter/2}px;`;
+    circle.className = 'ripple';
+    btn.appendChild(circle);
+    setTimeout(() => circle.remove(), 600);
+  }
+
+  // Milestone toasts
+  if (count === 25000)  { showToast('⚡ 25,000 reached!'); }
+  if (count === 50000)  { showToast('🔥 Halfway there – 50,000!'); launchConfetti(); }
+  if (count === 75000)  { showToast('🚀 75,000! Almost there!'); }
+  if (count === 100000) { showToast('🎉 1 LAKH COMPLETE!'); launchConfetti(); launchConfetti(); }
+
+  // Haptic
+  if (navigator.vibrate) navigator.vibrate(18);
+}
+
+// ── Decrement ─────────────────────────────────────────────────────────────
+function decrement() {
+  if (count <= 0) { showToast('Already at 0'); return; }
+  count--;
+  render();
+  if (navigator.vibrate) navigator.vibrate(10);
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────
+function resetConfirm() {
+  showToast('Tap RESET again to confirm');
+  const btn = document.querySelector('.sec-btn.reset');
+  btn.textContent = 'CONFIRM';
+  btn.style.color = '#ff5a5a';
+  btn.onclick = () => {
+    count = 0;
+    sessionStart = 0;
+    todayStart = 0;
+    localStorage.setItem('lakh_today_start_' + TODAY_KEY, 0);
+    render();
+    btn.textContent = 'RESET';
+    btn.style.color = '';
+    btn.onclick = resetConfirm;
+    showToast('Counter reset to 0');
+  };
+  setTimeout(() => {
+    if (btn.textContent === 'CONFIRM') {
+      btn.textContent = 'RESET';
+      btn.style.color = '';
+      btn.onclick = resetConfirm;
+    }
+  }, 3000);
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Confetti ──────────────────────────────────────────────────────────────
+function launchConfetti() {
+  const canvas = document.getElementById('confetti');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const colors = ['#f5c518','#ffe066','#3ddc84','#ff6b6b','#74b9ff','#fd79a8'];
+  const pieces = Array.from({length: 80}, () => ({
+    x: Math.random() * canvas.width,
+    y: -10,
+    r: Math.random() * 6 + 3,
+    d: Math.random() * 2 + 1,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    tilt: Math.random() * 10 - 5,
+    tiltAngle: 0,
+    tiltSpeed: Math.random() * 0.07 + 0.05,
+  }));
+
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      p.tiltAngle += p.tiltSpeed;
+      p.y += p.d + Math.sin(frame / 20) * 0.5;
+      p.x += Math.sin(frame / 25);
+      p.tilt = Math.sin(p.tiltAngle) * 12;
+      ctx.beginPath();
+      ctx.fillStyle = p.color;
+      ctx.ellipse(p.x, p.y, p.r, p.r * 0.4, p.tilt * Math.PI / 180, 0, 2 * Math.PI);
+      ctx.fill();
+    });
+    frame++;
+    if (frame < 120) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  draw();
+}
+
+// ── Network status ────────────────────────────────────────────────────────
+function updateNet() {
+  const online = navigator.onLine;
+  document.getElementById('netDot').className   = online ? 'dot-online' : 'dot-offline';
+  document.getElementById('netLabel').textContent = online ? 'ONLINE' : 'OFFLINE';
+}
+window.addEventListener('online',  updateNet);
+window.addEventListener('offline', updateNet);
+updateNet();
+
+// ── Keyboard support ─────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === '+' || e.key === '=' || e.key === ' ') increment(null);
+  if (e.key === '-') decrement();
+});
+
+// ── PWA Install prompt ────────────────────────────────────────────────────
+let deferredPrompt;
+const banner    = document.getElementById('installBanner');
+const installBtn = document.getElementById('installBtn');
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  setTimeout(() => banner.classList.add('visible'), 2000);
+});
+
+installBtn.addEventListener('click', async () => {
+  banner.classList.remove('visible');
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+  }
+});
+
+// iOS install hint
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.navigator.standalone;
+if (isIOS && !isStandalone) {
+  setTimeout(() => {
+    showToast('📱 Tap Share → Add to Home Screen to install');
+  }, 3000);
+}
+
+// ── Service Worker (offline support) ────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'lakh-counter-v1';
+    self.addEventListener('install', e => {
+      e.waitUntil(
+        caches.open(CACHE).then(c => c.addAll([self.location.pathname]))
+      );
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(keys =>
+        Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      ));
+      self.clients.claim();
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(
+        caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(e.request)))
+      );
+    });
+  `;
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
